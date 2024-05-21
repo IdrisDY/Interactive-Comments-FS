@@ -6,10 +6,12 @@ const routes = require("./routes/comments");
 
 require('dotenv').config()
 
+app.use(express.json())
+
 mongoose
   .connect(process.env.MONGO_URL)
   .then((res) => { 
-    app.listen("4000", (req, res) => {
+    app.listen("5000", (req, res) => {
       console.log("Started listening thank you");
     });
   })

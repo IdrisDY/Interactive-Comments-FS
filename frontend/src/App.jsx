@@ -4,16 +4,18 @@ import{createContext, useEffect,useState} from 'react'
 import Modal from './Comments/Modal';
 import Post_Comment from './Comments/Post-Comment';
 import Reducer from './Comments/reply';
+import useCommentContext from './hooks/useCommentContext';
 
 function App() {
+
+  const {commentInformation,dispatch} = useCommentContext()
 
 useEffect( ()=>{
   async function call (){
     try {
       const response = await fetch('/api/comments',{method:'GET'})
       const json = await response.json()
-      console.log(json,"Oh my sins")
-  
+      dispatch({type:'SET_WORKOUTS',payload:json})
     } catch (error) {
       console.log(error)
     }
@@ -24,7 +26,7 @@ useEffect( ()=>{
 
   return (
     <div className="App">
-     <Comment/>
+     <Comment details={commentInformation} />
      {/* {data} */}
     </div>
   );

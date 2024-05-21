@@ -1,6 +1,7 @@
 import { createContext, useReducer } from "react"
 
-export const CommentContext =  createContext({msg:'reason'})
+export const CommentContext =  createContext()
+
 export const commentReducer = (state,action)=>{
   switch (action.type) {
     case 'SET_WORKOUTS':
@@ -26,7 +27,7 @@ export const commentReducer = (state,action)=>{
 export function CommentContextProvider({children}){
 
   const [state,dispatch] = useReducer(commentReducer,{
-    commentsInformation:null
+    commentsInformation:[]
   })
 
   return <CommentContext.Provider value={{...state,dispatch}}>
