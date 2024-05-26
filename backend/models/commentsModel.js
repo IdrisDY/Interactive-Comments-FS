@@ -1,83 +1,51 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-const commentSchema = new Schema(
-  {
-    currentUser: {
-      image: {
-        png: {
-          type: String,
-          required: true,
-        },
-        webp: {
-          type: String,
-          required: true,
-        },
-      },
-      username: {
-        type: String,
-        required: true,
-      },
-    },
-    comments: [
-      {
-        id: {
-          type: Number,
-        },
-        content: {
-          type: String,
-        },
-        date: { type: String, default: "" },
-        score: {
-          type: Number,
-        },
-        user: {
-          image: {
-            png: {
-              type: String,
-            },
-            webp: {
-              type: String,
-            },
-          },
-          username: {
-            type: String,
-          },
-        },
-        replies: [
-          {
-            id: {
-              type: Number,
-            },
-            content: {
-              type: String,
-            },
-            date: { type: String, default: "" },
-            score: {
-              type: Number,
-            },
-            replyingTo: {
-              type: String,
-            },
-            user: {
-              image: {
-                png: {
-                  type: String,
-                },
-                webp: {
-                  type: String,
-                },
-              },
-              username: {
-                type: String,
-              },
-            },
-          },
-        ],
-      },
-    ],
-  },
-  { timestamps: true }
-);
 
-module.exports = mongoose.model("Comments", commentSchema);
+const userSchema = new Schema (
+  {
+      "image": { 
+        "png":String,
+        "webp":String
+      },
+      "username":String  
+  }
+)
+const commentOrReplySchema = new Schema ({
+  type:{type:String,enum:['comment','reply'],required:true},
+  parentId: Number,
+  id:Number,
+  content: String,
+  score:{ type:Number, default:1},
+  replyingTo: String,
+  user: {
+    image: {
+      png: String,
+      webp: String,
+    },
+    username: String,
+  },
+
+},{timestamps:true})
+
+// const commentSchema = new Schema(
+//   {
+//     id: Number,
+//     content: String,
+//     score: Number,
+//     user: {
+//       image: {
+//         png: String,
+//         webp: String,
+//       },
+//       username: String,
+//     },
+    
+//     replies: [replySchema],  },
+//   { timestamps: true }
+// );
+
+const commentOrReply = mongoose.model("commentOrReply", commentOrReplySchema);
+const userModel = mongoose.model("user", userSchema);
+
+module.exports = {commentOrReply,userModel}

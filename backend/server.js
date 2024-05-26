@@ -11,6 +11,7 @@ app.use(express.json())
 mongoose
   .connect(process.env.MONGO_URL)
   .then((res) => { 
+    
     app.listen("5000", (req, res) => {
       console.log("Started listening thank you");
     });
