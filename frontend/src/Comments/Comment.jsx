@@ -170,7 +170,7 @@ const Comment = ({ details }) => {
     };
 
     if (replyId) {
-      const response = await fetch(`/api/comments/${replyId}`, {
+      const response = await fetch(`https://interactive-comments-backend-1.onrender.com/api/comments/${replyId}`, {
         method: "POST",
         body: JSON.stringify(userobj),
         headers: {

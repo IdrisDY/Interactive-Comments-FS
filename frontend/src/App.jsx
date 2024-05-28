@@ -13,7 +13,7 @@ function App() {
 useEffect( ()=>{
   async function call (){
     try {
-      const response = await fetch('/api/comments',{method:'GET'})
+      const response = await fetch('https://interactive-comments-backend-1.onrender.com/api/comments',{method:'GET'})
       const json = await response.json()
       dispatch({type:'SET_WORKOUTS',payload:json})
     } catch (error) {
