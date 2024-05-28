@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const Modal = ({ handlecloseClick }) => {
+const Modal = ({ handlecloseClick ,updateCommentState}) => {
   const [btnClicked, setbtnClicked] = useState(false);
   const [closeClicked, setcloseClicked] = useState(false);
 
@@ -45,7 +45,7 @@ const Modal = ({ handlecloseClick }) => {
             </div>
           </div>
         </div>
-        <button className="flex gap-2 items-center text-[#ED6368]" onClick={handleopenClick}>
+        <button disabled={ updateCommentState} className={`${updateCommentState ? 'opacity-30':"" } flex gap-2 items-center font-[600] text-[#ED6368]`} onClick={handleopenClick}>
           {" "}
           <svg width="12" height="14" xmlns="http://www.w3.org/2000/svg">
             <path
