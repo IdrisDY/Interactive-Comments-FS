@@ -15,7 +15,7 @@ export const commentReducer = (state, action) => {
           {
             comments: [action.payload, ...state.commentInformation[0].comments],
           },
-          { userInfo: state.commentInformation.userInfo },
+          { userInfo: state?.commentInformation[1]?.userInfo },
         ],
       };
     case "UPDATE_COMMENT":
@@ -32,14 +32,19 @@ export const commentReducer = (state, action) => {
               }),
             ],
           },
-          { userInfo: state?.commentInformation?.userInfo },
+          { userInfo: state?.commentInformation[1]?.userInfo },
         ],
       };
-    case "DELETE_WORKOUT":
+    case "DELETE_COMMENT":
       return {
-        commentInformation: state.workouts.filter(
-          (item) => item._id !== action.payload._id
-        ),
+        commentInformation: [
+          {
+            comments: state.commentInformation[0]?.comments?.filter((item) => {
+              return item.id !== action.payload.id;
+            }),
+          },
+          { userInfo: state?.commentInformation[1]?.userInfo },
+        ],
       };
     default:
       return state;

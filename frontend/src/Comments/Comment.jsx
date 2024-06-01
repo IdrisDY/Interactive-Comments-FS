@@ -11,7 +11,7 @@ const Comment = ({ details }) => {
   // textarea for the comment box itself
   const textRef = useRef(null);
 
-  const CommentTemplate = ({ comment}) => {
+  const CommentTemplate = ({ comment }) => {
     const {
       id,
       _id,
@@ -31,7 +31,7 @@ const Comment = ({ details }) => {
         const obj = {
           content: message,
         };
-        const response = await fetch(`/api/comments/${id}`, {
+        const response = await fetch(`${import.meta.env.VITE_RENDER_URL}/api/comments/${id}`, {
           method: "PATCH",
           body: JSON.stringify(obj),
           headers: {
@@ -40,11 +40,30 @@ const Comment = ({ details }) => {
         });
         const json = await response.json();
         dispatch({ type: "UPDATE_COMMENT", payload: json });
-        setEditId(0)
-        setReplyId(0)
-      } catch (error) {}
+        setEditId(0);
+        setReplyId(0);
+      } catch (error) {
+        console.log(error);
+      }
     }
+    async function handleDeleteComment() {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_RENDER_URL}/api/comments/${id}`, {
+          method: "DELETE",
+        });
+        const json = await response.json();
+        console.log(json)
+        dispatch({ type: "DELETE_COMMENT", payload: json });
+        setDeleted(true);
 
+        // setTimeout(() => {
+        //   setDeleted(false);
+        // }, 3000);
+        setReplyId(0);
+      } catch (error) {
+        console.log(error);
+      }
+    }
     return (
       <div className="flex flex-col-reverse relative md:flex-row px-4 rounded-lg gap-6 py-4 bg-white ">
         {/* score counter */}
@@ -92,8 +111,10 @@ const Comment = ({ details }) => {
                 <div className="flex gap-4 items-center">
                   <ButtonModal
                     updateCommentState={editId === _id}
-                    handlecloseClick={() => handleDelete(_id)}
+                    handlecloseClick={() => setDelId(_id)}
+                    deleteComment={handleDeleteComment}
                   />
+
                   <button
                     disabled={editId === _id}
                     onClick={() => handleEdit(_id)}
@@ -177,7 +198,7 @@ const Comment = ({ details }) => {
 
   const [replyclick, setreplyclick] = useState(false);
   const [editclick, setEditclick] = useState(false);
-  const [del, setDel] = useState(false);
+  const [deleted, setDeleted] = useState(false);
 
   const { commentsInformation, dispatch } = useCommentContext();
   console.log(commentsInformation);
@@ -192,30 +213,36 @@ const Comment = ({ details }) => {
   }
 
   async function handleMessage(message, type) {
-    !replyclick ? setreplyclick(true) : setreplyclick(false);
+    setreplyclick(!replyclick);
     setMessageclick(true);
-
-    type ? console.log(type, message) : null;
-
+  
+    if (type) {
+      console.log(type, message);
+    }
+  
+    const userInfo = details[1]?.userInfo[0] 
+    const replyingTo = commentInfoInView?.user?.username || null;
+    const parentId = commentInfoInView?.id || null;
+  
     const userobj = {
       user: {
-        ...details[1].userInfo[0],
+        ...userInfo,
       },
       content: message,
       type: type === "SEND" ? "comment" : "reply",
-      replyingTo: commentInfoInView?.user?.username,
-      parentId: commentInfoInView.id,
+      replyingTo: replyingTo,
+      parentId: parentId,
     };
+  
     const commentObj = {
       user: {
-        ...details[1].userInfo[0],
+        ...userInfo,
       },
       content: message,
       type: "comment",
-      id: Math.random(),
+      id: Math.random(), // Generates a random string
     };
-    // `${import.meta.env.VITE_LOCAL}api/comments/${replyId}`,
-
+  
     if (replyId || (message && type === "SEND")) {
       try {
         const response = await fetch(`/api/comments`, {
@@ -225,27 +252,20 @@ const Comment = ({ details }) => {
             "Content-Type": "application/json",
           },
         });
+  
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+  
         const json = await response.json();
         console.log(json);
         dispatch({ type: "CREATE_COMMENT", payload: json });
       } catch (error) {
-        console.log(error);
+        console.error("Error:", error);
       }
     }
   }
-
-  const handleDelete = (id, e) => {
-    console.log(id);
-    const newComment = comments.reduce(function (acc, curr) {
-      const newv = comments.map((comment) => {
-        const array = comment.replies.filter((rep) => rep.id !== id);
-        setRep(true);
-        acc = array;
-        setComment(array);
-      });
-    }, []);
-  };
-
+  
   function handleclick(comment) {
     setCommentInfoInView(comment);
     setReplyId((prevState) => (prevState === comment._id ? 0 : comment._id));
@@ -286,7 +306,7 @@ const Comment = ({ details }) => {
                       <div className="border-l ">
                         {/* Mapping the replies  */}
 
-                        <div className="flex w-[88%] ml-auto flex-col gap-0">
+                        <div className="flex w-[95%]  md:w-[90%] ml-auto flex-col gap-0">
                           {details[0]?.comments
                             ?.filter((item) => item.type === "reply")
                             .filter((item) => comment.id === item.parentId)
@@ -295,9 +315,6 @@ const Comment = ({ details }) => {
                                 new Date(b.createdAt) - new Date(a.createdAt)
                             )
                             .map((reply) => {
-                              if (del & (comment.id === 4)) {
-                                return null;
-                              }
                               return (
                                 <div className="flex flex-col mb-[1rem] gap-4">
                                   <CommentTemplate comment={reply} />
