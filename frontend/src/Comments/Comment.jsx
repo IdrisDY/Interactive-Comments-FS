@@ -19,7 +19,6 @@ const Comment = ({ details }) => {
       createdAt,
       score,
       user: { image, username },
-      replies,
     } = comment;
     const { png, webp } = image;
     const [message, setMessage] = useState("");
@@ -31,13 +30,16 @@ const Comment = ({ details }) => {
         const obj = {
           content: message,
         };
-        const response = await fetch(`${import.meta.env.VITE_RENDER_URL}/api/comments/${id}`, {
-          method: "PATCH",
-          body: JSON.stringify(obj),
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
+        const response = await fetch(
+          `${import.meta.env.VITE_RENDER_URL}/api/comments/${id}`,
+          {
+            method: "PATCH",
+            body: JSON.stringify(obj),
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
         const json = await response.json();
         dispatch({ type: "UPDATE_COMMENT", payload: json });
         setEditId(0);
@@ -48,11 +50,17 @@ const Comment = ({ details }) => {
     }
     async function handleDeleteComment() {
       try {
-        const response = await fetch(`${import.meta.env.VITE_RENDER_URL}/api/comments/${id}`, {
-          method: "DELETE",
-        });
+        const response = await fetch(
+          `${import.meta.env.VITE_RENDER_URL}/api/comments/${id}`,
+          {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
         const json = await response.json();
-        console.log(json)
+        console.log(json);
         dispatch({ type: "DELETE_COMMENT", payload: json });
         setDeleted(true);
 
@@ -60,6 +68,7 @@ const Comment = ({ details }) => {
         //   setDeleted(false);
         // }, 3000);
         setReplyId(0);
+        setreplyclick(false)
       } catch (error) {
         console.log(error);
       }
@@ -200,8 +209,7 @@ const Comment = ({ details }) => {
   const [editclick, setEditclick] = useState(false);
   const [deleted, setDeleted] = useState(false);
 
-  const { commentsInformation, dispatch } = useCommentContext();
-  console.log(commentsInformation);
+  const { commentInformation, dispatch } = useCommentContext();
   function generateObjectId() {
     const timestamp = Math.floor(new Date().getTime() / 1000);
     const randomBytes = Array.from({ length: 5 }, () =>
@@ -215,15 +223,15 @@ const Comment = ({ details }) => {
   async function handleMessage(message, type) {
     setreplyclick(!replyclick);
     setMessageclick(true);
-  
+
     if (type) {
       console.log(type, message);
     }
-  
-    const userInfo = details[1]?.userInfo[0] 
+
+    const userInfo = details[1]?.userInfo[0];
     const replyingTo = commentInfoInView?.user?.username || null;
     const parentId = commentInfoInView?.id || null;
-  
+
     const userobj = {
       user: {
         ...userInfo,
@@ -232,8 +240,9 @@ const Comment = ({ details }) => {
       type: type === "SEND" ? "comment" : "reply",
       replyingTo: replyingTo,
       parentId: parentId,
+      id: Math.random(), // Generates a random string
     };
-  
+
     const commentObj = {
       user: {
         ...userInfo,
@@ -242,30 +251,34 @@ const Comment = ({ details }) => {
       type: "comment",
       id: Math.random(), // Generates a random string
     };
-  
+
     if (replyId || (message && type === "SEND")) {
       try {
-        const response = await fetch(`/api/comments`, {
-          method: "POST",
-          body: JSON.stringify(type === "SEND" ? commentObj : userobj),
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-  
+        const response = await fetch(
+          `${import.meta.env.VITE_RENDER_URL}/api/comments`,
+          {
+            method: "POST",
+            body: JSON.stringify(type === "SEND" ? commentObj : userobj),
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
         if (!response.ok) {
-          throw new Error('Network response was not ok');
+          throw new Error("Network response was not ok");
         }
-  
+
         const json = await response.json();
         console.log(json);
         dispatch({ type: "CREATE_COMMENT", payload: json });
+        setReplyId(0);
       } catch (error) {
         console.error("Error:", error);
       }
     }
   }
-  
+
   function handleclick(comment) {
     setCommentInfoInView(comment);
     setReplyId((prevState) => (prevState === comment._id ? 0 : comment._id));
