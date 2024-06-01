@@ -8,9 +8,10 @@ import moment from "moment";
 import useCommentContext from "../hooks/useCommentContext";
 
 const Comment = ({ details }) => {
+  // textarea for the comment box itself
   const textRef = useRef(null);
 
-  const CommentTemplate = ({ comment }) => {
+  const CommentTemplate = ({ comment}) => {
     const {
       id,
       _id,
@@ -21,6 +22,28 @@ const Comment = ({ details }) => {
       replies,
     } = comment;
     const { png, webp } = image;
+    const [message, setMessage] = useState("");
+    const [base, setBase] = useState(true);
+
+    async function updateMessage() {
+      console.log(textRef.current.value);
+      try {
+        const obj = {
+          content: message,
+        };
+        const response = await fetch(`/api/comments/${id}`, {
+          method: "PATCH",
+          body: JSON.stringify(obj),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        const json = await response.json();
+        dispatch({ type: "UPDATE_COMMENT", payload: json });
+        setEditId(0)
+        setReplyId(0)
+      } catch (error) {}
+    }
 
     return (
       <div className="flex flex-col-reverse relative md:flex-row px-4 rounded-lg gap-6 py-4 bg-white ">
@@ -125,10 +148,14 @@ const Comment = ({ details }) => {
             <div className=" flex gap-4 flex-col w-full">
               <textarea
                 ref={textRef}
-                className=" w-full rounded  outline-1 outline outline-[#5457b6] p-2"
+                className=" w-full h-[100px] rounded  outline-1 outline outline-[#5457b6] p-2"
                 defaultValue={content}
+                onChange={(e) => setMessage(e.target.value)}
               />
-              <button className=" text-white w-fit rounded-lg py-2 px-3 h-fit self-end   bg-[#5457b6] hover:bg-opacity-85 cursor-pointer">
+              <button
+                onClick={updateMessage}
+                className=" text-white w-fit rounded-lg py-2 px-3 h-fit self-end   bg-[#5457b6] hover:bg-opacity-85 cursor-pointer"
+              >
                 {" "}
                 UPDATE
               </button>
@@ -154,43 +181,57 @@ const Comment = ({ details }) => {
 
   const { commentsInformation, dispatch } = useCommentContext();
   console.log(commentsInformation);
+  function generateObjectId() {
+    const timestamp = Math.floor(new Date().getTime() / 1000);
+    const randomBytes = Array.from({ length: 5 }, () =>
+      Math.floor(Math.random() * 256)
+    );
+    const counter = Math.floor(Math.random() * 16777216);
 
-  async function handleMessage(message, id) {
+    return timestamp + randomBytes + counter;
+  }
+
+  async function handleMessage(message, type) {
     !replyclick ? setreplyclick(true) : setreplyclick(false);
     setMessageclick(true);
+
+    type ? console.log(type, message) : null;
 
     const userobj = {
       user: {
         ...details[1].userInfo[0],
       },
       content: message,
-      type: "reply",
-      replyingTo: `@${commentInfoInView.user.username}`,
+      type: type === "SEND" ? "comment" : "reply",
+      replyingTo: commentInfoInView?.user?.username,
       parentId: commentInfoInView.id,
     };
+    const commentObj = {
+      user: {
+        ...details[1].userInfo[0],
+      },
+      content: message,
+      type: "comment",
+      id: Math.random(),
+    };
+    // `${import.meta.env.VITE_LOCAL}api/comments/${replyId}`,
 
-    if (replyId) {
-      const response = await fetch(`https://interactive-comments-backend-1.onrender.com/api/comments/${replyId}`, {
-        method: "POST",
-        body: JSON.stringify(userobj),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      console.log(response);
-      console.log(replyId);
-      console.log(userobj);
-    }
-    //  const json = await response.json();
-    comments.map((reply) => {
-      const { replies, id } = reply;
-      console.log(id);
-      if (id === userobj.Parentid) {
-        replies.push(userobj);
+    if (replyId || (message && type === "SEND")) {
+      try {
+        const response = await fetch(`/api/comments`, {
+          method: "POST",
+          body: JSON.stringify(type === "SEND" ? commentObj : userobj),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        const json = await response.json();
+        console.log(json);
+        dispatch({ type: "CREATE_COMMENT", payload: json });
+      } catch (error) {
+        console.log(error);
       }
-
-      // ?:<PostedComment/>
-    });
+    }
   }
 
   const handleDelete = (id, e) => {
@@ -224,14 +265,14 @@ const Comment = ({ details }) => {
   }
 
   return (
-    <div className="w-[90%] md:w-3/5 lg:w-1/2 m-auto">
+    <div className="w-[90%] md:w-[70%] lg:w-1/2 m-auto">
       {/* Mapping main comments */}
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col">
         {details &&
           details[0]?.comments?.map((comment) => {
             if (comment.type === "comment") {
               return (
-                <div key={comment._id} className="flex flex-col gap-6">
+                <div key={comment._id} className="flex flex-col gap-4">
                   <CommentTemplate comment={comment} />
                   <div>
                     {replyId === comment._id ? (
@@ -242,33 +283,52 @@ const Comment = ({ details }) => {
                     ) : null}
 
                     <div>
-                      <div>
+                      <div className="border-l ">
                         {/* Mapping the replies  */}
 
-                        <div className="flex flex-col gap-6">
+                        <div className="flex w-[88%] ml-auto flex-col gap-0">
                           {details[0]?.comments
-                            .filter((item) => item.type === "reply")
+                            ?.filter((item) => item.type === "reply")
                             .filter((item) => comment.id === item.parentId)
-                            .map((rep) => {
+                            .sort(
+                              (a, b) =>
+                                new Date(b.createdAt) - new Date(a.createdAt)
+                            )
+                            .map((reply) => {
                               if (del & (comment.id === 4)) {
                                 return null;
                               }
+                              return (
+                                <div className="flex flex-col mb-[1rem] gap-4">
+                                  <CommentTemplate comment={reply} />
+                                  {replyId === reply._id ? (
+                                    <InputComment
+                                      buttonAction="REPLY"
+                                      postClick={handleMessage}
+                                    />
+                                  ) : null}
 
-                              if (comment.id === rep.parentId) {
-                                return (
-                                  <div key={rep._id}>
-                                    <CommentTemplate comment={rep} />;
-                                    {replyId === rep._id ? (
-                                      <InputComment
-                                        buttonAction="REPLY"
-                                        postClick={handleMessage}
-                                      />
-                                    ) : null}
-                                  </div>
-                                );
-                              } else {
-                                return null;
-                              }
+                                  {/* Mapping replies under replies :) */}
+                                  {details[0]?.comments
+                                    ?.filter((item) => item.type === "reply")
+                                    .filter(
+                                      (item) =>
+                                        item.replyingTo === reply.user.username
+                                    )
+                                    .sort(
+                                      (a, b) =>
+                                        new Date(b.createdAt) -
+                                        new Date(a.createdAt)
+                                    )
+                                    .map((rep) => {
+                                      return (
+                                        <div className="">
+                                          <CommentTemplate comment={rep} />
+                                        </div>
+                                      );
+                                    })}
+                                </div>
+                              );
                             })}
                         </div>
                       </div>
@@ -280,7 +340,10 @@ const Comment = ({ details }) => {
           })}
       </div>
 
-      <InputComment buttonAction="SEND" />
+      <InputComment
+        postClick={(msg) => handleMessage(msg, "SEND")}
+        buttonAction="SEND"
+      />
     </div>
   );
 };

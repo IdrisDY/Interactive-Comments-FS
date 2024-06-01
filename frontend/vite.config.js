@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "https://interactive-comments-backend-1.onrender.com/",
+        target: "http://localhost:4000",
         changeOrigin: true,
         secure: false,
       },
